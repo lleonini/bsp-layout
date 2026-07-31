@@ -45,14 +45,18 @@ get_layout_file() {
 
 # (layout, List[args]) -> ()
 setup_layout() {
-  bash "$(get_layout_file $1)" setup $*
+  local layout=$1
+  shift
+  bash "$(get_layout_file $layout)" setup "$@"
 }
 
 # (layout, List[args]) -> ()
 run_layout() {
+  local layout=$1
+  shift
   local old_scheme=$(bspc config automatic_scheme)
   bspc config automatic_scheme alternate
-  bash "$(get_layout_file $1)" run $*
+  bash "$(get_layout_file $layout)" run "$@"
   bspc config automatic_scheme $old_scheme
 }
 
@@ -201,14 +205,23 @@ start_listener() {
 # List[args] -> ()
 once_layout() {
   if (echo -e "$BSP_DEFAULT_LAYOUTS" | grep "^$1$"); then exit 0; fi
+  local layout=$1
+  shift
   local focused_desktop=$(get_focused_desktop)
-  local selected_desktop="${2:-$focused_desktop}"
+  local selected_desktop="$focused_desktop"
+
+  if [[ "$1" == "--" ]]; then
+    shift
+  elif [[ -n "$1" ]]; then
+    selected_desktop="$1"
+    shift
+  fi
 
   # List[str] ->
   __calculate_layout() {
-    setup_layout "$@"
-    run_layout "$@"
-    run_layout "$@"
+    setup_layout "$layout" "$@"
+    run_layout "$layout" "$@"
+    run_layout "$layout" "$@"
   }
 
   if [[ "$selected_desktop" != "$focused_desktop" ]]; then
